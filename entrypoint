@@ -1,0 +1,32 @@
+#!/bin/sh
+
+set -e
+
+# Options.
+DATADIR="/data"
+
+if [ ! -z "$CONFIGDIR" ]; then
+  DATADIR=$DATADIR/$CONFIGDIR
+fi
+
+# based on https://github.com/jimeh/docker-znc/blob/master/docker-entrypoint.sh
+# Build modules from source.
+if [ -d "${DATADIR}/modules" ]; then
+  # Store current directory.
+  cwd="$(pwd)"
+
+  # Find module sources.
+  modules=$(find "${DATADIR}/modules" -name "*.cpp")
+
+  # Build modules.
+  for module in $modules; do
+    cd "$(dirname "$module")"
+    znc-buildmod "$module"
+  done
+
+  # Go back to original directory.
+  cd "$cwd"
+fi
+
+chown -R znc:znc "$DATADIR"
+exec su -s '/bin/sh' -c "znc --foreground --datadir=\"$DATADIR\" $@" znc
